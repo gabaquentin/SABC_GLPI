@@ -1,15 +1,13 @@
 #Import the required Libraries
-import os
+
 import threading
 import time
 from os.path import exists
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 
 import subprocess
-import sys
 
 st.set_page_config(layout="wide")
 
