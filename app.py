@@ -5,7 +5,6 @@ import time
 from os.path import exists
 
 import streamlit as st
-from streamlit.scriptrunner import get_script_run_ctx as add_report_ctx
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -60,7 +59,6 @@ def PopenCall(onExit, PopenArgs):
         return
 
     thread = threading.Thread(target=runInThread, args=(onExit, PopenArgs))
-    add_report_ctx()
     thread.start()
 
     return thread
