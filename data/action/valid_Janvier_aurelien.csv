@@ -1,0 +1,16 @@
+Catégorie,Action,clean_categorie,predicted_categorie,valid_sentence
+M3 > Commercial,Réapprovisionner le stock pour annuler les incidents pour que les voitures commencent à voler.,M3,M3,True
+Applications collaboratives > Messagerie,"Réinitialisation de la carte réseau, ok.",Applications,Applications,True
+M3 > Finance,Merci de voir avec le master data pour mise à jour.,M3,M3,True
+M3 > Finance,Merci de renseigner une plage de compte au niveau de la ligne compte.,M3,M3,True
+Postes de travail > Installation et Configuration,Configuration signature Ok.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Remplacement de l'adaptateur Ok.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Configurations effectuées.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Refixation correcte du câble réseau.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Configuration de l'imprimante.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Configuration du lien de lims.,Postes,Postes,True
+Postes de travail > Installation et Configuration,Problème résolu sans action de notre part.,Postes,Postes,True
+Postes de travail > Installation et Configuration,A clôturer.,Postes,Postes,True
+Postes de travail > Installation et Configuration,A clôturer ok.,Postes,Postes,True
+Securité > Profil,Nouvelle imprimante mis à jour.,Securité,Securité,True
+Securité > Profil,Configuration de l'utilisateur Ok.,Securité,Securité,True
