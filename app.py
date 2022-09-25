@@ -4,12 +4,21 @@ import threading
 import time
 from os.path import exists
 
+import spacy
 import streamlit as st
 import pandas as pd
 
 import subprocess
 
+from st_aggrid import AgGrid
+from text_hammer.utils import nlp
+
 st.set_page_config(layout="wide")
+
+#GLOBAL VAR
+
+st.session_state['TOLERANCE_GRAMMATICALE'] =0
+st.session_state['CAT_CORR'] =False
 
 # Get all data function
 def get_data(data, this, fo_r):
@@ -80,8 +89,8 @@ def get_cat_data(uploaded_file, fo_r, this):
     else:
         #Premierement, on vas categoriser les diagnostics, car un bon diagnostic doit pouvoir appartenir a sa categorie d'origine
         df = get_data(uploaded_file, this, fo_r)
-        df_to_predict = pd.DataFrame({'Description' : []})
-        df_to_predict['Description'] = df[fo_r]
+        df_to_predict = pd.DataFrame({'Titre' : []})
+        df_to_predict['Titre'] = df[fo_r]
 
         saved_file_name = time.time()
         df_to_predict.to_csv("{}/file_name_{}.csv".format(data_path, saved_file_name), index=False)
@@ -112,32 +121,35 @@ def get_cat_data(uploaded_file, fo_r, this):
 #process validation function
 def process_val(df, fo_r, uploaded_file):
     data_path = ''
+    Qrow = ''
     if fo_r == 'Diagnostic':
         data_path = './data/diagnostic'
+        Qrow = 'QDiagnostic'
     elif fo_r == 'Action':
         data_path = './data/action'
+        Qrow = 'QAction'
 
-    valid_exists = exists('{}/valid_{}'.format(data_path, uploaded_file.name))
-    invalid_exists = exists('{}/invalid_{}'.format(data_path, uploaded_file.name))
+    final_df = exists('{}/final_{}'.format(data_path, uploaded_file.name))
 
-    if valid_exists and invalid_exists:
-        return [pd.read_csv("{}/valid_{}".format(data_path, uploaded_file.name)), pd.read_csv("{}/invalid_{}".format(data_path, uploaded_file.name))]
+    if final_df:
+        return pd.read_csv("{}/final_{}".format(data_path, uploaded_file.name))
     else:
+        df['valid_predict'] = True
+        if st.session_state.CAT_CORR :
+            df[df['clean_categorie'] == df['predicted_categorie'], 'valid_predict'] = True
+            df[df['clean_categorie'] != df['predicted_categorie'], 'valid_predict'] = False
+
         df['valid_sentence'] = df[fo_r].apply(validateSentence)
-        valid_df = df[df['valid_sentence'] == True]
-        invalid_df = df[df['valid_sentence'] == False]
 
-        valid_df = valid_df[valid_df['clean_categorie'] == valid_df['predicted_categorie']]
+        df.loc[(df['valid_sentence'] == True) & (df['valid_predict'] == True), Qrow] = True
+        df.loc[(df['valid_sentence'] == False) | (df['valid_predict'] == False), Qrow] = False
 
-        invalid_df.append(valid_df[valid_df['clean_categorie'] != valid_df['predicted_categorie']], ignore_index=True)
+        df.to_csv("{}/final_{}".format(data_path, uploaded_file.name), index=False)
 
-        valid_df.to_csv("{}/valid_{}".format(data_path, uploaded_file.name), index=False)
-        invalid_df.to_csv("{}/invalid_{}".format(data_path, uploaded_file.name), index=False)
-
-        return [valid_df, invalid_df]
+        return df
 
 # sentences validations functions
-def validateSentence(s):
+def validateSentences(s):
     index = 0
     if s[index].islower():                                # 1er état
         return False
@@ -157,13 +169,27 @@ def validateSentence(s):
 
     return True
 
+def validateSentence(s):
+    doc = nlp(s.lower())
+    DEP_Counts = doc.count_by(spacy.attrs.DEP)
+    num_dependency = 0
+    core_arguments = ['nsubj', 'obj', 'iobj', 'csubj', 'ccomp', 'xcomp']
+    nominal_dependency = ['nmod', 'appos', 'numod', 'acl', 'amod', 'det', 'clf', 'case']
+    non_core_dependents = ['obl', 'vocative', 'expl', 'dislocated', 'advcl', 'advmod', 'discourse', 'aux', 'cop', 'mark']
+    for k,v in sorted(DEP_Counts.items()) :
+        if doc.vocab[k].text in core_arguments or doc.vocab[k].text in nominal_dependency or doc.vocab[k].text in non_core_dependents:
+            num_dependency+=1
+    if num_dependency < st.session_state.TOLERANCE_GRAMMATICALE:
+        return False
+
+    return True
 # Functions for each of the pages
 def home(uploaded_file):
     if uploaded_file:
         st.header('Verifiez qu\'il s\'agissent bien du bon fichier')
         st.text('Une fois le fichier verifié, vous cliquez sur une option dans le menu de navigation a ⬅️ gauche pour obtenir un 📊 recapitulatif de la validation de la semantique des données des saisient')
         df = pd.read_csv(upload_file, sep=';')
-        st.write(df)
+        AgGrid(df)
     else:
         st.header('Téléverser un fichier pour commencer')
 
@@ -171,10 +197,23 @@ def diagnostics(uploaded_file):
     if uploaded_file:
         st.header('DIAGNOSTICS')
         df = get_cat_data(uploaded_file, 'Diagnostic', 'Diagnostic Intervenant - Description')
-        valid_df = process_val(df, 'Diagnostic', uploaded_file)[0]
-        invalid_df = process_val(df, 'Diagnostic', uploaded_file)[1]
-        st.write(valid_df)
-        st.write(invalid_df)
+        final_df = process_val(df, 'Diagnostic', uploaded_file)
+        valid_df = final_df[final_df['QDiagnostic'] == True]
+        invalid_df = final_df[final_df['QDiagnostic'] == False]
+        st.write(len(df))
+        st.write(len(valid_df))
+        st.write(len(invalid_df))
+
+        AgGrid(df)
+        #st.write(df)
+
+        st.text('DIAGNOSTICS CORRECTES')
+        AgGrid(valid_df)
+        #st.write(valid_df)
+
+        st.text('DIAGNOSTICS INCORRECTES')
+        AgGrid(invalid_df)
+        #st.write(invalid_df)
     else:
         home(upload_file)
 
@@ -182,16 +221,29 @@ def actions_menees(uploaded_file):
     if uploaded_file:
         st.header('ACTIONS MENÉES')
         df = get_cat_data(uploaded_file, 'Action', 'Action(s) menée(s) - Action(s) menée(s)')
-        valid_df = process_val(df, 'Action', uploaded_file)[0]
-        invalid_df = process_val(df, 'Action', uploaded_file)[1]
-        st.write(valid_df)
-        st.write(invalid_df)
+        final_df = process_val(df, 'Action', uploaded_file)
+        valid_df = final_df[final_df['QAction'] == True]
+        invalid_df = final_df[final_df['QAction'] == False]
+        st.write(len(df))
+        st.write(len(valid_df))
+        st.write(len(invalid_df))
+
+        AgGrid(df)
+        #st.write(df)
+
+        st.text('DIAGNOSTICS CORRECTES')
+        AgGrid(valid_df)
+        #st.write(valid_df)
+
+        st.text('DIAGNOSTICS INCORRECTES')
+        AgGrid(invalid_df)
+        #st.write(invalid_df)
     else:
         home(upload_file)
 
 def general(uploaded_file):
     if uploaded_file:
-        st.header('Plot of Data')
+        st.header('Dashbord')
     else:
         home(upload_file)
 
@@ -206,6 +258,19 @@ upload_file = st.sidebar.file_uploader('Selectioner votre fichier ici')
 st.sidebar.title('NAVIGATION')
 options = st.sidebar.radio('Que voulez vous visualiser:', ['Accueil', 'Diagnostics', 'Actions menées', 'General'])
 
+#st.write("I'm ", age, 'years old')
+
+def sidebar_param(disabled = False):
+    with st.sidebar:
+        #Sidebar filter options
+        st.sidebar.title('PARAMETRES')
+        st.session_state.TOLERANCE_GRAMMATICALE = st.sidebar.slider('Tolerance grammatical', 0, 5, 1, disabled=disabled)
+        st.session_state.CAT_CORR = st.checkbox('Correspondance a la categorie', disabled=disabled)
+
+if upload_file is not None and options == 'Accueil':
+    sidebar_param()
+else:
+    sidebar_param(True)
 
 # Navigation options
 if options == 'Accueil':
