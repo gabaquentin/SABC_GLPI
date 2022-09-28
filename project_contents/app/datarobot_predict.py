@@ -9,7 +9,6 @@ We highly recommend that you update SSL certificates with:
     pip install -U "urllib3[secure]" certifi
 """
 import sys
-import json
 import requests
 
 API_URL = 'https://app2.datarobot.com/api/v2/deployments/{deployment_id}/predictions/'
@@ -127,12 +126,12 @@ def main(file, deployment_id):
                   'Input file is too large: {} bytes. '
                   'Max allowed size is: {} bytes.'
               ).format(data_size, MAX_PREDICTION_FILE_SIZE_BYTES))
-        return 1
+        return 2
     try:
         predictions = make_datarobot_deployment_predictions(data, deployment_id)
     except DataRobotPredictionError as exc:
         print(exc)
-        return 1
+        return 3
 
     return predictions
 

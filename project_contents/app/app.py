@@ -80,6 +80,7 @@ def get_cleaned_cat(df, for_r):
 #get dataframe categorized
 def get_cat_data(fo_r, this):
     if len(st.session_state.TEMP_FILE) > 0:
+        st.write('existß')
         return st.session_state.TEMP_FILE
 
     else:
@@ -111,6 +112,7 @@ def process_val(df, fo_r):
         Qrow = 'QAction'
 
     if len(st.session_state.TEMP_FILE) > 0:
+        st.write('existß')
         return st.session_state.TEMP_FILE
     else:
         df['valid_predict'] = True
