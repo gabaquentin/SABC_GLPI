@@ -1,0 +1,33 @@
+api-version: 2021-07-01
+location: francecentral
+name: valsem
+properties:
+  containers:
+    - name: streamlitapp
+      properties:
+        image: sabcglpireg.azurecr.io/sabc_glpi:v1
+        ports:
+          - port: 80
+            protocol: TCP
+          - port: 443
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 2.0
+            memoryInGB: 1.5
+  imageRegistryCredentials:
+    - server: sabcglpireg.azurecr.io
+      username: sabcglpireg
+      password: GQNrvpEnUlU=nPn1yMGdwR110LdO+QnK
+  restartPolicy: Never
+  ipAddress:
+    ports:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
+    type: Public
+    dnsNameLabel: castelafrique
+  osType: Linux
+tags: null
+type: Microsoft.ContainerInstance/containerGroups

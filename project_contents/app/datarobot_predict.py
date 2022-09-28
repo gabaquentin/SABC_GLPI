@@ -1,7 +1,7 @@
 
 """
 Usage:
-    python datarobot-predict.py <input-file.csv>
+    python datarobot_predict.py <input-file.csv>
 
 This example uses the requests library which you can install with:
     pip install requests
@@ -88,7 +88,7 @@ def make_datarobot_deployment_predictions(data, deployment_id):
     # Make API request for predictions
     predictions_response = requests.post(
         url,
-        data=data,
+        data=data.encode(encoding='utf-8'),
         headers=headers,
         # Prediction Explanations:
         # Uncomment this to include explanations in your prediction
@@ -109,18 +109,18 @@ def _raise_dataroboterror_for_status(response):
         raise DataRobotPredictionError(err_msg)
 
 
-def main(filename, deployment_id):
+def main(file, deployment_id):
     """
     Return an exit code on script completion or error. Codes > 0 are errors to the shell.
     Also useful as a usage demonstration of
     `make_datarobot_deployment_predictions(data, deployment_id)`
     """
-    if not filename:
+    if len(file) == 0:
         print(
             'Input file is required argument. '
-            'Usage: python datarobot-predict.py <input-file.csv>')
+            'Usage: python datarobot_predict.py <input-file.csv>')
         return 1
-    data = open(filename, 'rb').read()
+    data = file
     data_size = sys.getsizeof(data)
     if data_size >= MAX_PREDICTION_FILE_SIZE_BYTES:
         print((
@@ -133,11 +133,6 @@ def main(filename, deployment_id):
     except DataRobotPredictionError as exc:
         print(exc)
         return 1
-    print(json.dumps(predictions, indent=4))
-    return 0
 
-
-if __name__ == "__main__":
-    filename = sys.argv[1]
-    sys.exit(main(filename, DEPLOYMENT_ID))
+    return predictions
 

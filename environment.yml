@@ -1,0 +1,14 @@
+name: sabc_glpi
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.6
+  - pip
+  - pip:
+      - streamlit
+      - spacy
+      - pandas
+      - datarobot
+      - streamlit-aggrid
+      - plotly
