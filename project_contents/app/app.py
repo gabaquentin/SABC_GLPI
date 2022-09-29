@@ -1,9 +1,12 @@
 #Import the required Libraries
+import os
 import threading
+from io import BytesIO
 
 import spacy
 import streamlit as st
 import pandas as pd
+from PIL import Image
 
 import subprocess
 from st_aggrid import AgGrid
@@ -15,6 +18,11 @@ from datarobot_predict import  main
 nlp = spacy.load("fr_core_news_sm")
 
 st.set_page_config(layout="wide")
+
+path = os.path.dirname(os.path.realpath('__file__'))
+#image_file = path+'/project_contents/app/logo.png'
+image_file = path+'/logo.png'
+image = Image.open(image_file)
 
 #GLOBAL VAR
 
@@ -80,7 +88,6 @@ def get_cleaned_cat(df, for_r):
 #get dataframe categorized
 def get_cat_data(fo_r, this):
     if len(st.session_state.TEMP_FILE) > 0:
-        st.write('existß')
         return st.session_state.TEMP_FILE
 
     else:
@@ -88,18 +95,24 @@ def get_cat_data(fo_r, this):
         df = get_data(st.session_state.FILE, this, fo_r)
         df_to_predict = pd.DataFrame({'Description' : []})
         df_to_predict['Description'] = df[fo_r]
-
-        predicted_df = main(df_to_predict.to_csv(), st.session_state.DEPLOYMENT_ID)
-
+        predicted_df = 1
         all_cat = get_cleaned_cat(df, fo_r)
 
         for cat in all_cat:
             df.loc[df['Catégorie'].str.contains(cat), 'clean_categorie'] = cat
 
         df['predicted_categorie'] = ""
-        for k, v in df.iterrows():
-            if k in predicted_df['data']:
-                df['predicted_categorie'][k] = predicted_df['data'][k]['prediction']
+
+        if st.session_state.CAT_CORR:
+            predicted_df = main(df_to_predict.to_csv(), st.session_state.DEPLOYMENT_ID)
+
+            if predicted_df == 1:
+                st.warning("Un probleme est survenu, recheargez la page et si ca persiste, contactez l'administrateur")
+
+            i = 0
+            for k, v in df.iterrows():
+                df['predicted_categorie'][k] = predicted_df['data'][i]['prediction']
+                i+=1
 
         return df
 
@@ -112,7 +125,6 @@ def process_val(df, fo_r):
         Qrow = 'QAction'
 
     if len(st.session_state.TEMP_FILE) > 0:
-        st.write('existß')
         return st.session_state.TEMP_FILE
     else:
         df['valid_predict'] = True
@@ -124,7 +136,6 @@ def process_val(df, fo_r):
                     df['valid_predict'][index] = False
 
         df['valid_sentence'] = df[fo_r].apply(validateSentence)
-
         df.loc[(df['valid_sentence'] == True) & (df['valid_predict'] == True), Qrow] = True
         df.loc[(df['valid_sentence'] == False) | (df['valid_predict'] == False), Qrow] = False
 
@@ -227,6 +238,18 @@ def best_ratio(file, option, type):
     return list
     # Functions for each of the pages
 
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    workbook = writer.book
+    worksheet = writer.sheets['Sheet1']
+    format1 = workbook.add_format({'num_format': '0.00'})
+    worksheet.set_column('A:A', None, format1)
+    writer.save()
+    processed_data = output.getvalue()
+    return processed_data
+
 def home():
     uploaded_file = st.session_state.FILE
     if len(uploaded_file) > 0:
@@ -267,6 +290,10 @@ def diagnostics():
             st.header("Par ratio")
             st.plotly_chart(fig3, use_container_width=True)
         AgGrid(file[file[option] == filtre])
+        df_xlsx = to_excel(file[file[option] == filtre].drop('Qlté Actions Menées', axis=1))
+        st.download_button(label='📥 Telecharger le fichier',
+                           data=df_xlsx ,
+                           file_name= '%s_qlte_diagnostic.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
     else:
         home()
 
@@ -300,6 +327,10 @@ def actions_menees():
             st.header("Ratio par %s" % option)
             st.plotly_chart(fig3, use_container_width=True)
         AgGrid(file[file[option] == filtre])
+        df_xlsx = to_excel(file[file[option] == filtre].drop('Qlté Diagnostic', axis=1))
+        st.download_button(label='📥 Telecharger le fichier',
+                           data=df_xlsx ,
+                           file_name= '%s_qlte_action_menee.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
     else:
         home()
 
@@ -309,6 +340,10 @@ def general():
         file = last_process(file=file,this='Action', fo_r='Action(s) menée(s) - Action(s) menée(s)', r_fo_r='Qlté Actions Menées', p_fo_r='QAction')
 
         AgGrid(file)
+        df_xlsx = to_excel(file)
+        st.download_button(label='📥 Telecharger le fichier',
+                           data=df_xlsx ,
+                           file_name= '%s_qlte_champs.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
     else:
         home()
 
@@ -316,6 +351,8 @@ def general():
 st.title('SABC ML App')
 st.text('Validation de la sémantique des diagnostics et actions menées sur GLPI')
 
+with st.sidebar.container():
+    logo = st.image(image)
 # Sidebar setup
 st.sidebar.title('FORMULAIRE')
 upload_file = st.sidebar.file_uploader('Selectioner votre fichier ici')
@@ -350,7 +387,7 @@ if upload_file is not None:
     if all_column_in:
         st.session_state.FILE = uploaded_file
         st.session_state.FILE_NAME = upload_file.name
-        st.success('Fichier %s valide' % st.session_state.FILE_NAME)
+        #st.success('Fichier %s valide' % st.session_state.FILE_NAME)
     else:
         st.warning('Verifiez que votre fichier posséde au moins les colones : \n '
                    '- Secteurs \n '

@@ -12,3 +12,4 @@ dependencies:
       - datarobot
       - streamlit-aggrid
       - plotly
+      - xlsxwriter

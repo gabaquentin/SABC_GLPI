@@ -126,12 +126,12 @@ def main(file, deployment_id):
                   'Input file is too large: {} bytes. '
                   'Max allowed size is: {} bytes.'
               ).format(data_size, MAX_PREDICTION_FILE_SIZE_BYTES))
-        return 2
+        return 1
     try:
         predictions = make_datarobot_deployment_predictions(data, deployment_id)
     except DataRobotPredictionError as exc:
         print(exc)
-        return 3
+        return 1
 
     return predictions
 

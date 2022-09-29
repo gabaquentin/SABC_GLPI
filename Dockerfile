@@ -17,7 +17,8 @@ WORKDIR /opt/sabc_glpi
 USER micromamba
 COPY environment.yml environment.yml
 RUN micromamba install -y -n base -f environment.yml && \
-   micromamba clean --all --yes \
+   micromamba clean --all --yes
+RUN python -m spacy download fr_core_news_sm
 COPY run.sh run.sh
 COPY project_contents project_contents
 COPY nginx.conf /etc/nginx/nginx.conf
