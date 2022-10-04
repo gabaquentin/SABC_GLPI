@@ -17,7 +17,8 @@ API_KEY = 'NjMyYzg0Zjg4YmY5MDc5MmViMWIwOGNiOmxwbzFzeFpQcUZUcm5Ca0V5OEVZZHc3Mkc3a
 DEPLOYMENT_ID = '6329929cd452ce5ad78adfe7'
 
 # Don't change this. It is enforced server-side too.
-MAX_PREDICTION_FILE_SIZE_BYTES = 52428800  # 50 MB
+#MAX_PREDICTION_FILE_SIZE_BYTES = 52428800  # 50 MB
+MAX_PREDICTION_FILE_SIZE_BYTES = 20000000000  # 20 GB
 
 
 class DataRobotPredictionError(Exception):
