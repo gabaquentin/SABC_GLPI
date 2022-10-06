@@ -14,6 +14,7 @@
 > Permet de creer des applications en python pure, et aucune connaissance en frontend n'est requis. 
 
 >- spacy == 2.3.5
+>
 >Il s'agit ici d'une bibliothèque avancée pour le traitement du langage naturel en python et Cython.
 > 
 
