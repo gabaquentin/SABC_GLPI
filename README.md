@@ -41,7 +41,7 @@
 ###### Une fois les modules et packages installes, nous pouvons proceder au lancement du projet 
 
 ## LANCER LE PROJET EN LOCAL
-`1- Ouvrez un terminal dans le dossier /app `
+`1- Ouvrez un terminal dans le dossier ./project_contents/app `
 
 `2- lancez la commande suivante :  `
 >streamlit run app.py --server.maxUploadSize 20000
