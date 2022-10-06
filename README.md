@@ -87,6 +87,6 @@
 > ###### Deployer l'application
 > `az container create --resource-group SABC_GLPI_GROUP --name valsem -f deployment.yml`
 
-### Ouvrir le projet en cliquant via ce lien 
+### Ouvrir le projet en cliquant sur ce lien 
 >http://castelafrique.francecentral.azurecontainer.io
 ###### Ou en vous rendant dans votre projet sur le site d'azure
