@@ -1,6 +1,5 @@
-# Import the required Libraries
+# Importer les librairies requises
 import os
-import threading
 from io import BytesIO
 
 import spacy
@@ -8,27 +7,29 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
-import subprocess
 from st_aggrid import AgGrid
 
 import plotly.graph_objects as go
 
 from datarobot_predict import main
 
+# Initialiser les variables globales
 nlp = spacy.load("fr_core_news_sm")
 
 st.set_page_config(layout="wide")
 
 path = os.path.dirname(os.path.realpath('__file__'))
-# image_file = path+'/project_contents/app/logo.png'
-image_file = path + '/logo.png'
-image = Image.open(image_file)
 
-# GLOBAL VAR
+image_file = path+'/project_contents/app/logo.png'
+
+if os.path.isfile(image_file):
+    image = Image.open(image_file)
+else:
+    image = Image.open(path + '/logo.png')
 
 st.session_state['FILE'] = bytearray()
 st.session_state['FILE_NAME'] = ""
-st.session_state['DEPLOYMENT_ID'] = "6329929cd452ce5ad78adfe7"
+st.session_state['DEPLOYMENT_ID'] = "633c3f5b9ee9f96d89b4df5b"
 
 st.session_state['FILTRE'] = ['Secteurs', 'Région', 'Attribué à - Technicien', 'Etablissement', 'Service', 'Catégorie']
 
@@ -100,34 +101,39 @@ def get_cat_data(column_name, type):
 
     if st.session_state.CAT_CORR:
 
-        predicted_df = 1
         all_cat = get_cleaned_cat(df, column_name)
         for cat in all_cat:
             df.loc[df['Catégorie'].str.contains(cat), 'clean_categorie'] = cat
+        predicted_df = 1
+
+        predicted_df = main(df_to_predict.to_csv(), st.session_state.DEPLOYMENT_ID)
 
         df['predicted_categorie'] = ""
         df['predicted_categorie (%)'] = ""
 
-        predicted_df = main(df_to_predict.to_csv(), st.session_state.DEPLOYMENT_ID)
-
         if predicted_df == 1:
-            st.warning("Un probleme est survenu, recheargez la page et si ca persiste, contactez l'administrateur")
+            st.warning("API DATAROBOT Inactif veuillez contacter l'administrateur")
+            st.session_state['CAT_CORR'] = False
 
         i = 0
         for k, v in df.iterrows():
-            predicted = next((x for x in predicted_df['data'][i]['predictionValues'] if
-                              x["label"] == predicted_df['data'][i]['prediction']), None)
-            if predicted != None:
-                if predicted['value'] >= 0.7:
-                    df['predicted_categorie'][k] = predicted_df['data'][i]['prediction']
-                    df['predicted_categorie (%)'][k] = predicted['value']
-                else:
-                    df['predicted_categorie'][k] = df['clean_categorie'][k]
-                    df['predicted_categorie (%)'][k] = predicted['value']
+            if predicted_df == 1:
+                df['predicted_categorie'][k] = df['clean_categorie'][k]
             else:
-                st.warning("Un probleme est survenu, recheargez la page et si ca persiste, contactez l'administrateur")
-                break
-            i += 1
+
+                predicted = next((x for x in predicted_df['data'][i]['predictionValues'] if
+                                  x["label"] == predicted_df['data'][i]['prediction']), None)
+                if predicted != None:
+                    if predicted['value'] >= 0.7:
+                        df['predicted_categorie'][k] = predicted_df['data'][i]['prediction']
+                        df['predicted_categorie (%)'][k] = predicted['value']
+                    else:
+                        df['predicted_categorie'][k] = df['clean_categorie'][k]
+                        df['predicted_categorie (%)'][k] = predicted['value']
+                else:
+                    st.warning("Un probleme est survenu, recheargez la page et si ca persiste, contactez l'administrateur")
+                    break
+                i += 1
 
     return df
 
@@ -275,7 +281,7 @@ def draw_bar(element):
 def best_ratio(file, option, type):
 
     """
-    Cette fonction permet de calculer le ratio Champs sémantiquement correcte/Total des champs
+    Cette fonction permet de calculer le ratio ( Champs sémantiquement correcte/Total des champs ) en %
     :param file:
     :param option:
     :param type:
@@ -412,7 +418,8 @@ def general():
                             QColumn_name='Qlté Actions Menées',
                             QColumn_name2='QAction')
 
-        AgGrid(file)
+        #AgGrid(file)
+        st.write(file)
         df_xlsx = to_excel(file)
         st.download_button(label='📥 Telecharger le fichier',
                            data=df_xlsx,
@@ -458,9 +465,6 @@ upload_file = st.sidebar.file_uploader('Selectioner votre fichier ici')
 # Sidebar navigation
 st.sidebar.title('NAVIGATION')
 options = st.sidebar.radio('Que voulez vous visualiser:', ['Accueil', 'Diagnostics', 'Actions menées', 'General'])
-
-
-# st.write("I'm ", age, 'years old')
 
 def sidebar_param(disabled=False):
     with st.sidebar:

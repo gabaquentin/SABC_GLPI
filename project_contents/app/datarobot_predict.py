@@ -12,7 +12,7 @@ import sys
 import requests
 
 API_URL = 'https://app2.datarobot.com/api/v2/deployments/{deployment_id}/predictions/'
-API_KEY = 'NjMyYzg0Zjg4YmY5MDc5MmViMWIwOGNiOmxwbzFzeFpQcUZUcm5Ca0V5OEVZZHc3Mkc3aXhJY1pjaklwL2xRQXNCSkk9'
+API_KEY = 'NjMzYzNmYmYyMTAxY2QzOTA3Y2JlODY1Ojl1MENINWJyWUlFMGU5NHJCdUVIM2VZS3gwbURkLzNXUm9JL2JobDRnN1E9'
 
 DEPLOYMENT_ID = '6329929cd452ce5ad78adfe7'
 
