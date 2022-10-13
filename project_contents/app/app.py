@@ -3,7 +3,10 @@ import os
 from io import BytesIO
 
 import spacy
+
 import streamlit as st
+
+
 import pandas as pd
 from PIL import Image
 
@@ -28,10 +31,18 @@ else:
     image = Image.open(path + '/logo.png')
 
 st.session_state['FILE'] = bytearray()
-st.session_state['FILE_NAME'] = ""
 st.session_state['DEPLOYMENT_ID'] = "633c3f5b9ee9f96d89b4df5b"
 
-st.session_state['FILTRE'] = ['Secteurs', 'Région', 'Attribué à - Technicien', 'Etablissement', 'Service', 'Catégorie']
+st.session_state['FILTRE'] = ['Secteurs',
+                              'Région',
+                              'Attribué à - Technicien',
+                              'Etablissement',
+                              'Service',
+                              'Catégorie',
+                              'Diagnostic Intervenant - Description',
+                              'Qlté Diagnostic',
+                              'Action(s) menée(s) - Action(s) menée(s)',
+                              'Qlté Actions Menées']
 
 
 def get_data(data, type, column_name):
@@ -307,6 +318,7 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
+# Fonctions de navigation
 
 def home():
     if len(st.session_state.FILE) > 0:
@@ -334,7 +346,7 @@ def diagnostics():
             st.session_state.FILTRE)
 
         filtre = st.selectbox(
-            'Selectioner une valeure',
+            'Selectioner un élément',
             file[option].unique())
 
         fig1 = draw_pie(file, option, filtre, "Diagnostic")
@@ -351,7 +363,7 @@ def diagnostics():
             st.plotly_chart(fig2, use_container_width=True)
 
         with col3:
-            st.header("Par ratio")
+            st.header("Tous les Éléments")
             st.plotly_chart(fig3, use_container_width=True)
         AgGrid(file[file[option] == filtre])
         #st.write(file[file[option] == filtre])
@@ -377,7 +389,7 @@ def actions_menees():
             st.session_state.FILTRE)
 
         filtre = st.selectbox(
-            'Selectioner une valeure',
+            'Selectioner un élément',
             file[option].unique())
 
         fig1 = draw_pie(file, option, filtre, "Action")
@@ -394,7 +406,7 @@ def actions_menees():
             st.plotly_chart(fig2, use_container_width=True)
 
         with col3:
-            st.header("Ratio par %s" % option)
+            st.header("Tous les Éléments")
             st.plotly_chart(fig3, use_container_width=True)
         AgGrid(file[file[option] == filtre])
         df_xlsx = to_excel(file[file[option] == filtre].drop('Qlté Diagnostic', axis=1))
@@ -418,8 +430,7 @@ def general():
                             QColumn_name='Qlté Actions Menées',
                             QColumn_name2='QAction')
 
-        #AgGrid(file)
-        st.write(file)
+        AgGrid(file)
         df_xlsx = to_excel(file)
         st.download_button(label='📥 Telecharger le fichier',
                            data=df_xlsx,
@@ -462,9 +473,12 @@ with st.sidebar.container():
 # Sidebar setup
 st.sidebar.title('FORMULAIRE')
 upload_file = st.sidebar.file_uploader('Selectioner votre fichier ici')
+
+
 # Sidebar navigation
 st.sidebar.title('NAVIGATION')
 options = st.sidebar.radio('Que voulez vous visualiser:', ['Accueil', 'Diagnostics', 'Actions menées', 'General'])
+
 
 def sidebar_param(disabled=False):
     with st.sidebar:
@@ -483,28 +497,47 @@ def sidebar_param(disabled=False):
 
 if upload_file is not None:
 
-    uploaded_file = pd.read_csv(upload_file, sep=';')
+    st.session_state['FILE_NAME'], st.session_state['FILE_EXT'] = os.path.splitext(upload_file.name)
 
-    all_column_in = True
-    for k, v in pd.Series(st.session_state.FILTRE).isin(uploaded_file.columns).iteritems():
-        if v == False:
-            all_column_in = False
-            break
-    if all_column_in:
-        st.session_state.FILE = uploaded_file
-        st.session_state.FILE_NAME = upload_file.name
-
-        # st.success('Fichier %s valide' % st.session_state.FILE_NAME)
+    if st.session_state['FILE_EXT'] in ['.xlsx', '.csv']:
+        if st.session_state['FILE_EXT'] == '.xlsx':
+            # Convertir le fichier excel en Dataframe
+            uploaded_file = pd.DataFrame(pd.read_excel(upload_file, engine='openpyxl', header=1))
+        else:
+            # Convertir le fichier csv en Dataframe
+            uploaded_file = pd.read_csv(upload_file, sep=';', error_bad_lines=False)
     else:
-        st.warning('Verifiez que votre fichier posséde au moins les colones : \n '
-                   '- Secteurs \n '
-                   '- Région \n '
-                   '- Attribué à '
-                   '- Technicien \n '
-                   '- Etablissement \n '
-                   '- Service \n '
-                   '- Catégorie \n '
-                   'Indispensables pour notre application')
+        uploaded_file = bytearray()
+        st.warning('Le fichier selectionner n\'est pas accepté. Les fichiers acceptés sont les suivants : \n '
+                   '- .xlsx (Excel)\n '
+                   '- .csv ')
+
+
+    if len(uploaded_file) > 0:
+        all_column_in = True
+        for k, v in pd.Series(st.session_state.FILTRE).isin(uploaded_file.columns).iteritems():
+            if v == False:
+                all_column_in = False
+                break
+        if all_column_in:
+            st.session_state.FILE = uploaded_file
+            st.session_state.FILE_NAME = upload_file.name
+
+            # st.success('Fichier %s valide' % st.session_state.FILE_NAME)
+        else:
+            st.warning('Verifiez que votre fichier posséde au moins les colones : \n '
+                       '- Secteurs \n '
+                       '- Région \n '
+                       '- Attribué à '
+                       '- Technicien \n '
+                       '- Etablissement \n '
+                       '- Service \n '
+                       '- Catégorie \n '
+                       '- Diagnostic Intervenant - Description \n '
+                       '- Qlté Diagnostic \n '
+                       '- Action(s) menée(s) - Action(s) menée(s) \n '
+                       '- Qlté Actions Menées \n '
+                       'Indispensables pour notre application')
 
     if options == 'Accueil':
         sidebar_param()

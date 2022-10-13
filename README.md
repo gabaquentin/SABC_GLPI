@@ -38,6 +38,10 @@
 >
 > Module python permettant d'enregistrer le fichier final sous excel
 
+>- xlrd == 2.0.1 et openpyxl == 3.0.10
+>
+> Modules python permettant de lire les fichiers excel
+
 ###### Une fois les modules et packages installes, nous pouvons proceder au lancement du projet 
 
 ## LANCER LE PROJET EN LOCAL

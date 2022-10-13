@@ -13,3 +13,5 @@ dependencies:
       - streamlit-aggrid
       - plotly
       - xlsxwriter
+      - xlrd
+      - openpyxl
