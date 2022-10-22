@@ -47,7 +47,7 @@ st.session_state['FILTRE'] = ['Secteurs',
 
 def get_data(data, type, column_name):
     """
-    Cette fonction permet de nettoyer le tableau en entrees afin de ne garder que les colones qui seront necessaires
+    Cette fonction permet de nettoyer le tableau en entre afin de ne garder que les colones qui seront necessaires
     pour le traitement des donnees
 
     :param csv data : Les donnees initiales
@@ -77,7 +77,7 @@ def get_data(data, type, column_name):
 
 def get_cleaned_cat(df, column_name):
     """
-    Cette fonction permet de nettoyer les differentes categories
+    Cette fonction permet de nettoyer les differentes categories en retirant les caracteres inutiles
 
     :param Dataframe df : Dataframe initial
     :param str column_name : Le nom de la colonne à analyser sur le fichier uploader
@@ -99,7 +99,7 @@ def get_cleaned_cat(df, column_name):
 
 def get_cat_data(column_name, type):
     """
-    Cette fonction permet de predire les categories des diffenrents champs
+    Cette fonction permet de predire les categories des diffenrents champs en fesant appel au main du fichier datarobot.py
 
     :param str column_name: Le nom de la colonne à analyser sur le fichier uploader
     :param str type: Le type de colonne à analyser [Diagnostic / Action]
@@ -148,54 +148,6 @@ def get_cat_data(column_name, type):
 
     return df
 
-
-def process_val(df, column_name, QColumn_name2):
-    """
-    Cette fonction permet de proceer a la validation des donnees en comparant les differents resultats obtenus pour avoir le resultat final
-
-    :param Dataframe df : Dataframe initial
-    :param str column_name : Le nom de la colonne à analyser sur le fichier uploader
-    :param QColumn_name2 : Le nom de la colonne analyse où est stocke le résultat
-    :return Dataframe : Le Dataframe analysé et pret a la publication des resultats
-    """
-
-    df['valid_predict'] = True
-    df[QColumn_name2] = False
-    if st.session_state.CAT_CORR:
-        for index, row in df.iterrows():
-            if row['clean_categorie'] == row['predicted_categorie']:
-                df['valid_predict'][index] = True
-            else:
-                df['valid_predict'][index] = False
-
-    df['valid_sentence'] = df[column_name].apply(validate_sentence)
-    df.loc[(df['valid_sentence'] == True) & (df['valid_predict'] == True), QColumn_name2] = True
-    return df
-
-
-def last_process(file, type, column_name, QColumn_name, QColumn_name2):
-    """
-    Cette fonction permet de remplir la colonne approprié par les resultats obtenus
-
-    :param csv file : Le fichier uploader et possédant les colonnes nécessaire
-    :param str type : Le type de colonne à analyser [Diagnostic / Action]
-    :param str column_name : Le nom de la colonne à analyser sur le fichier uploader
-    :param str QColumn_name : Le nom de la colonne uploader où seras stocker les résultats obtenus
-    :param str QColumn_name2 : Le nom de la colonne analyse où est stocke le résultat
-    :return Dataframe : Le Dataframe final avec la colonne QColumn_name2 modifié
-    """
-
-    df = get_cat_data(type, column_name)
-    final_df = process_val(df, type, QColumn_name2)
-
-    file[QColumn_name] = False
-    for index, row in final_df.iterrows():
-        file.loc[final_df[type][index] == file[column_name], QColumn_name] = final_df[QColumn_name2][index]
-
-    st.session_state.FILE = file
-    return file
-
-
 def validate_sentence(s):
     """
     Cette fonction permet de traiter le texte pour analyser sa syntaxe grammaticale
@@ -231,9 +183,62 @@ def validate_sentence(s):
     else:
         return False
 
+def process_val(df, column_name, QColumn_name2):
+    """
+    Cette fonction permet de proceder a la validation des donnees en comparant les differents resultats obtenus dans la classification et l'analyse grammaticale des donnees pour avoir les resultats finaux
+
+    :param Dataframe df : Dataframe initial
+    :param str column_name : Le nom de la colonne à analyser sur le fichier uploader
+    :param str QColumn_name2 : Le nom de la colonne où seras stocké le résultat
+    :return Dataframe : Le Dataframe analysé et pret a la publication des resultats
+    """
+
+    df['valid_predict'] = True
+    df[QColumn_name2] = False
+    if st.session_state.CAT_CORR:
+        for index, row in df.iterrows():
+            if row['clean_categorie'] == row['predicted_categorie']:
+                df['valid_predict'][index] = True
+            else:
+                df['valid_predict'][index] = False
+
+    df['valid_sentence'] = df[column_name].apply(validate_sentence)
+    df.loc[(df['valid_sentence'] == True) & (df['valid_predict'] == True), QColumn_name2] = True
+    return df
+
+
+def last_process(file, type, column_name, QColumn_name, QColumn_name2):
+    """
+    Cette fonction permet de remplir la colonne approprié dans le fichiers d'entree par les resultats obtenus dans la fonction process_val()
+
+    :param csv file : Le fichier uploader et possédant les colonnes nécessaires
+    :param str type : Le type de colonne à analyser [Diagnostic / Action]
+    :param str column_name : Le nom de la colonne à analyser sur le fichier uploader
+    :param str QColumn_name : Le nom de la colonne où seront stocker les résultats finaux sur le fichier uploader
+    :param str QColumn_name2 : Le nom de la colonne où sont stockés les résultats obtenus sur le dataframe nettoyé
+    :return Dataframe : Le Dataframe final avec la colonne QColumn_name2 modifié
+    """
+
+    df = get_cat_data(type, column_name)
+    final_df = process_val(df, type, QColumn_name2)
+
+    file[QColumn_name] = False
+    for index, row in final_df.iterrows():
+        file.loc[final_df[type][index] == file[column_name], QColumn_name] = final_df[QColumn_name2][index]
+
+    st.session_state.FILE = file
+    return file
 
 def draw_pie(file, option, filtre, type):
+    """
+    Cette fonction permet de dessiner les graphes circulaires pour les statistiques
 
+    :param csv file: Le fichier traite et possedant les resultats finaux
+    :param str option: L'option de tri choisi par l'utilisateur
+    :param str filtre: L'element de filtre choisie par l'utilisateur dans dans une option precise
+    :param str type: Le type a filtrer [Diagnostic / Action / ActionG / DiagnosticG]
+    :return : La figure resultante
+    """
     labels = ['OK', 'NON OK']
     if type == 'Diagnostic':
         values = [
@@ -265,8 +270,28 @@ def draw_pie(file, option, filtre, type):
 
     return fig
 
+def best_ratio(file, option, type):
+
+    """
+    Cette fonction permet de calculer le ratio ( Champs sémantiquement correcte/Total des champs ) en %
+    :param csv file: Le fichier uploader et possédant les resultats finaux
+    :param str option: L'option de tri choisi par l'utilisateur
+    :param str type: La colonne a analyser
+    :return: la liste complete des ratios par options
+    """
+    list = {}
+    for val in file[option].unique():
+        list[val] = (len(file[(file[option] == val) & (file[type] == True)]) / len(file[file[option] == val])) * 100
+
+    return list
 
 def draw_bar(element):
+
+    """
+    Cette fonction permet de dessiner l'histogramme des resultats obtenus
+    :param element: la liste complete des ratios par options calculé dans la fonction best_ratio()
+    :return: la figure resultantes
+    """
     datay = []
     datax = []
     for k, v in element.items():
@@ -288,25 +313,13 @@ def draw_bar(element):
     )
     return fig
 
-
-def best_ratio(file, option, type):
-
-    """
-    Cette fonction permet de calculer le ratio ( Champs sémantiquement correcte/Total des champs ) en %
-    :param file:
-    :param option:
-    :param type:
-    :return:
-    """
-    list = {}
-    for val in file[option].unique():
-        list[val] = (len(file[(file[option] == val) & (file[type] == True)]) / len(file[file[option] == val])) * 100
-
-    return list
-    # Functions for each of the pages
-
-
 def to_excel(df):
+
+    """
+    Cette fonction permet de convertir un Dataframe en excel
+    :param Dataframe df: Le dataframe a convertir
+    :return : le fichier excel
+    """
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     df.to_excel(writer, index=False, sheet_name='Sheet1')
@@ -332,8 +345,14 @@ def home():
 
 
 def diagnostics():
+    #Verifier si le fichier existe
+
     if len(st.session_state.FILE) > 0:
+        #Afficher le titre
+
         st.header('DIAGNOSTICS')
+
+        #Analyser le fichier d'entre
 
         file = last_process(file=st.session_state.FILE,
                             type='Diagnostic',
@@ -341,13 +360,19 @@ def diagnostics():
                             QColumn_name='Qlté Diagnostic',
                             QColumn_name2='QDiagnostic')
 
+        #Afficher la liste des options disponibles
+
         option = st.selectbox(
             'Filtrer par',
             st.session_state.FILTRE)
 
+        #Filtrer les options dans une liste
+
         filtre = st.selectbox(
             'Selectioner un élément',
             file[option].unique())
+
+        #Afficher les differents graphes
 
         fig1 = draw_pie(file, option, filtre, "Diagnostic")
         fig2 = draw_pie(file, option, filtre, "DiagnosticG")
@@ -365,32 +390,56 @@ def diagnostics():
         with col3:
             st.header("Tous les Éléments")
             st.plotly_chart(fig3, use_container_width=True)
+
+        #Afficher le tableau des resultats obtenus en fonction du filtre choisie dans une option
+
         AgGrid(file[file[option] == filtre])
         #st.write(file[file[option] == filtre])
+
+        #Convertir le dataframe en excel
+
         df_xlsx = to_excel(file[file[option] == filtre].drop('Qlté Actions Menées', axis=1))
+
+        #Boutton de telechargement du fichier en excel en fonction du filtre choisi dans une option
+
         st.download_button(label='📥 Telecharger le fichier',
                            data=df_xlsx,
                            file_name='%s_qlte_diagnostic.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
     else:
+        #Afficher la page d'accueil si le fichier existe pas
+
         home()
 
 
 def actions_menees():
+    #Verifier si le fichier existe
+
     if len(st.session_state.FILE) > 0:
+        #Afficher le titre
+
         st.header('ACTIONS MENÉES')
+
+        #Analyser le fichier d'entre
+
         file = last_process(file=st.session_state.FILE,
                             type='Action',
                             column_name='Action(s) menée(s) - Action(s) menée(s)',
                             QColumn_name='Qlté Actions Menées',
                             QColumn_name2='QAction')
 
+        #Afficher la liste des options disponibles
+
         option = st.selectbox(
             'Filtrer par',
             st.session_state.FILTRE)
 
+        #Filtrer les options dans une liste
+
         filtre = st.selectbox(
             'Selectioner un élément',
             file[option].unique())
+
+        #Afficher les differents graphes
 
         fig1 = draw_pie(file, option, filtre, "Action")
         fig2 = draw_pie(file, option, filtre, "ActionG")
@@ -408,17 +457,33 @@ def actions_menees():
         with col3:
             st.header("Tous les Éléments")
             st.plotly_chart(fig3, use_container_width=True)
+
+        #Afficher le tableau des resultats obtenus en fonction du filtre choisie dans une option
+
         AgGrid(file[file[option] == filtre])
+
+        #Convertir le dataframe en excel
+
         df_xlsx = to_excel(file[file[option] == filtre].drop('Qlté Diagnostic', axis=1))
+
+        #Boutton de telechargement du fichier en excel en fonction du filtre choisi dans une option
+
         st.download_button(label='📥 Telecharger le fichier',
                            data=df_xlsx,
                            file_name='%s_qlte_action_menee.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
     else:
+        #Afficher la page d'accueil si le fichier existe pas
+
         home()
 
 
 def general():
+    #Verifier si le fichier existe
+
     if len(st.session_state.FILE) > 0:
+
+        #Analyser le fichier d'entre
+
         file = last_process(file=st.session_state.FILE,
                             type='Diagnostic',
                             column_name='Diagnostic Intervenant - Description',
@@ -430,15 +495,26 @@ def general():
                             QColumn_name='Qlté Actions Menées',
                             QColumn_name2='QAction')
 
+        #Afficher le tableau des resultats obtenus au complet
+
         AgGrid(file)
+
+        #Convertir le dataframe en excel
+
         df_xlsx = to_excel(file)
+
+        #Boutton de telechargement du fichier complet en excel
         st.download_button(label='📥 Telecharger le fichier',
                            data=df_xlsx,
                            file_name='%s_qlte_champs.xlsx' % os.path.splitext(st.session_state.FILE_NAME)[0])
 
+        #Afficher la liste des options disponibles
+
         option = st.selectbox(
             'Filtrer par',
             st.session_state.FILTRE)
+
+        #Afficher les differents graphes
 
         # PIE
         piefig1 = draw_pie(file, option, "", "ActionG")
@@ -461,25 +537,33 @@ def general():
             st.plotly_chart(piefig3, use_container_width=True)
 
     else:
+        #Afficher la page d'accueil si le fichier existe pas
+
         home()
 
 
-# Add a title and intro text
+#Afficher le titre de la page d'accueil
+
 st.title('SABC ML App')
 st.text('Validation de la sémantique des diagnostics et actions menées sur GLPI')
 
+#Afficher le logo sur la barre laterale
+
 with st.sidebar.container():
     logo = st.image(image)
-# Sidebar setup
+
+#Afficher le formulaire sur la barre laterale
+
 st.sidebar.title('FORMULAIRE')
 upload_file = st.sidebar.file_uploader('Selectioner votre fichier ici')
 
 
-# Sidebar navigation
+#Afficher les options de navigation sur la barre laterale
+
 st.sidebar.title('NAVIGATION')
 options = st.sidebar.radio('Que voulez vous visualiser:', ['Accueil', 'Diagnostics', 'Actions menées', 'General'])
 
-
+#Afficher les parametres sur la barre laterale
 def sidebar_param(disabled=False):
     with st.sidebar:
         # Sidebar filter options
@@ -494,10 +578,15 @@ def sidebar_param(disabled=False):
                                                                     disabled=disabled)
         st.session_state.CAT_CORR = st.checkbox('Correspondance a la categorie', CC, disabled=disabled)
 
+#Verifier si le fichier uploade est correct
 
 if upload_file is not None:
 
+    #Enregistrer le nom et l'extension du fichier uploade
+
     st.session_state['FILE_NAME'], st.session_state['FILE_EXT'] = os.path.splitext(upload_file.name)
+
+    #Verifier si l'extention du fichier uploader est valide
 
     if st.session_state['FILE_EXT'] in ['.xlsx', '.csv']:
         if st.session_state['FILE_EXT'] == '.xlsx':
@@ -507,24 +596,31 @@ if upload_file is not None:
             # Convertir le fichier csv en Dataframe
             uploaded_file = pd.read_csv(upload_file, sep=';', error_bad_lines=False)
     else:
+        #Si le fichier n'est pas valide, on sauvegarde un fichier vide et on affiche un message a l'ecran
+
         uploaded_file = bytearray()
         st.warning('Le fichier selectionner n\'est pas accepté. Les fichiers acceptés sont les suivants : \n '
                    '- .xlsx (Excel)\n '
                    '- .csv ')
 
-
+    #Si un fichier est accepte, on vas verifier les diferentes colonnes qu'il possede
     if len(uploaded_file) > 0:
         all_column_in = True
         for k, v in pd.Series(st.session_state.FILTRE).isin(uploaded_file.columns).iteritems():
             if v == False:
                 all_column_in = False
                 break
+
         if all_column_in:
+            #Si toutes les colonnes necessaires sont reperees, on enregistre notre fichier dans un variable globale
+
             st.session_state.FILE = uploaded_file
             st.session_state.FILE_NAME = upload_file.name
 
             # st.success('Fichier %s valide' % st.session_state.FILE_NAME)
         else:
+            #Si toutes les colonnes necessaires ne sont pas reperees, on affiche un message d'erreur
+
             st.warning('Verifiez que votre fichier posséde au moins les colones : \n '
                        '- Secteurs \n '
                        '- Région \n '
@@ -540,11 +636,16 @@ if upload_file is not None:
                        'Indispensables pour notre application')
 
     if options == 'Accueil':
+        #On affiche les parametres si nous sommes dans la page d'accueil uniquement
+
         sidebar_param()
 else:
+    #On desactive les parametres si nous ne sommes pas dans la page d'accueil
+
     sidebar_param(True)
 
-# Navigation options
+#Options de navigation
+
 if options == 'Accueil':
     home()
 elif options == 'Diagnostics':

@@ -44,8 +44,51 @@
 
 ###### Une fois les modules et packages installes, nous pouvons proceder au lancement du projet 
 
+## FICHIERS ET DOSSIERS
+>- DOSSIER : `project_content/app`
+>
+> Dossier contenant les fichiers principaux tels que : `app.py` `datarobot_predict.py` `logo.png`
+
+>- FICHIER : `/project_content/app/app.py`
+>
+> Fichier principal contenant l'application web et les differents traitements en python
+
+>- FICHIER : `/project_content/app/datarobot_predict.py`
+>
+> Fichier servant d'interface entre notre application et le serveur permettant de categoriser les donnees
+
+>- FICHIER : `/project_content/app/logo.png`
+>
+> Logo de SABC
+
+>- FICHIER : `/deployment.yml`
+>
+> Fichier secondaire necessaire pour le deploiement de l'application et contenat les parametres de deploiement
+
+>- FICHIER : `/Dockerfile`
+>
+> Fichier secondaire necessaire pour le deploiement de l'application et contenant les parametres de dockerisation permettant d'installer automatiquement l'environnement de travail dans le cloud
+
+>- FICHIER : `/environment.yml`
+>
+> Fichier secondaire necessaire pour le deploiement de l'application et contenat les bibliotheques necessaires au bon fonctionnement de l'application
+
+>- FICHIER : `/nginx.conf`
+>
+> Fichier secondaire necessaire pour le deploiement de l'application et contenat les commandes permettant au lien de l'application sur le cloud de fonctionner sans la specification du port `8501` (Port part defaut pour les applications streamlit)
+
+>- FICHIER : `/run.sh`
+>
+> Fichier secondaire necessaire pour le deploiement de l'application et contenat les commandes pour lancer le projet automatiquement
 ## LANCER LE PROJET EN LOCAL
-`1- Ouvrez un terminal dans le dossier ./project_contents/app `
+
+>- FICHIERS NECESSAIRES
+>
+> `/project_content/app/app.py`
+> 
+> `/project_content/app/datarobot.py`
+> 
+> `/project_content/app/logo.png`
 
 `2- lancez la commande suivante :  `
 >streamlit run app.py --server.maxUploadSize 20000
@@ -64,7 +107,7 @@
 ###### Lancer les commandes suivantes dans l'ordre 
 > ###### 1- Coordonner le deploiement dans Docker
 > ###### Le fichier `Dockerfile` contient la configuration pour la dockerisation 
-> ###### Le fichier `run.sh` contient la commande pour lancer notre application
+> ###### Le fichier `run.sh` contient les commandes pour lancer notre application
 > ###### Le fichier `environment.yml` contient la liste des paquets necessaires pour executer l'application
 > Les commandes suivantes permettent de dockeriser l'application
 >
